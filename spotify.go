@@ -29,7 +29,7 @@ func NewSpotifyClient(clientId, clientSecret, cacheDir string, cacheTime time.Du
 		MaxRequestsPerSecond: 4.0,
 		Auth: auth,
 	}
-	api, err := apiclient.NewAPIClient("https://api.spotify.com/v1/", cacheDir, cacheTime, 4.0, auth)
+	api, err := apiclient.NewAPIClient(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create spotify api client")
 	}
