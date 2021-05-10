@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/rclancey/apiclient"
+	"github.com/rclancey/cache/fs"
 )
 
 type SpotifyClient struct {
@@ -19,6 +20,14 @@ func NewSpotifyClient(clientId, clientSecret, cacheDir string, cacheTime time.Du
 	auth, err := NewClientAuth(clientId, clientSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create spotify auth")
+	}
+	opts := apiclient.APIClientOptions{
+		BaseURL: "https://api.spotify.com/v1/",
+		RequestTimeout: 0,
+		CacheStore: fscache.NewFSCacheStore(cacheDir),
+		MaxCacheTime: cacheTime,
+		MaxRequestsPerSecond: 4.0,
+		Auth: auth,
 	}
 	api, err := apiclient.NewAPIClient("https://api.spotify.com/v1/", cacheDir, cacheTime, 4.0, auth)
 	if err != nil {
