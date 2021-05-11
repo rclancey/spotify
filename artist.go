@@ -2,6 +2,8 @@ package spotify
 
 import (
 	//"log"
+	"net/url"
+	"path"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -19,6 +21,7 @@ type Artist struct {
 	Href string `json:"href"`
 	Images []*Image `json:"images"`
 	Popularity int `json:"popularity"`
+	c *SpotifyClient
 }
 
 func (art *Artist) GetImage(c *SpotifyClient) (img []byte, ct string, err error) {
@@ -40,7 +43,14 @@ func (c *SpotifyClient) SearchArtist(name string) ([]*Artist, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "can't search spotify for artist " + name)
 	}
+	c.addClientToArtists(res.Artists...)
 	return res.Artists, nil
+}
+
+func (c *SpotifyClient) addClientToArtists(artists ...*Artist) {
+	for _, art := range artists {
+		art.c = c
+	}
 }
 
 func (c *SpotifyClient) GetArtistImage(name string) (img []byte, ct string, err error) {
@@ -58,4 +68,17 @@ func (c *SpotifyClient) GetArtistImage(name string) (img []byte, ct string, err 
 		}
 	}
 	return nil, "", errors.Wrap(err, "can't get artist image")
+}
+
+func (art *Artist) GetAlbums() ([]*Album, error) {
+	rsrc := path.Join("artists", art.ID, "albums")
+	q := url.Values{}
+	q.Set("limit", "50")
+	q.Set("offset", "0")
+	sr, err := art.c.GetPaged(rsrc, q)
+	if err != nil {
+		return nil, err
+	}
+	art.c.addClientToAlbums(sr.Albums...)
+	return sr.Albums, nil
 }
