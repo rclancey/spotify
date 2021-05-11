@@ -3,7 +3,7 @@ package spotify
 import (
 	"encoding/json"
 	"io/ioutil"
-	//"log"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -76,6 +76,7 @@ func (c *SpotifyClient) GetPaged(rsrc string, q url.Values) (*SearchResult, erro
 			if res.StatusCode == http.StatusTooManyRequests {
 				wait, err := strconv.Atoi(res.Header.Get("Retry-After"))
 				if err == nil {
+					log.Printf("API ratelimit; waiting %d seconds", wait)
 					time.Sleep(time.Duration(wait + 1) * time.Second)
 					continue
 				}
