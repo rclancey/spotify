@@ -35,8 +35,8 @@ func (c *SpotifyClient) Search(name, kind string) (*SearchResult, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "can't execute spotify search")
 		}
-		defer res.Body.Close()
 		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
 			if res.StatusCode == http.StatusTooManyRequests {
 				wait, err := strconv.Atoi(res.Header.Get("Retry-After"))
 				if err == nil {
@@ -47,6 +47,7 @@ func (c *SpotifyClient) Search(name, kind string) (*SearchResult, error) {
 			return nil, errors.New(res.Status)
 		}
 		data, err := ioutil.ReadAll(res.Body)
+		res.Body.Close()
 		if err != nil {
 			return nil, errors.Wrap(err, "can't read spotify search response")
 		}

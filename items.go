@@ -71,8 +71,8 @@ func (c *SpotifyClient) GetPaged(rsrc string, q url.Values) (*SearchResult, erro
 		if err != nil {
 			return nil, errors.Wrap(err, "can't execute spotify paged request")
 		}
-		defer res.Body.Close()
 		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
 			if res.StatusCode == http.StatusTooManyRequests {
 				wait, err := strconv.Atoi(res.Header.Get("Retry-After"))
 				if err == nil {
@@ -83,6 +83,7 @@ func (c *SpotifyClient) GetPaged(rsrc string, q url.Values) (*SearchResult, erro
 			return nil, errors.New(res.Status)
 		}
 		data, err := ioutil.ReadAll(res.Body)
+		res.Body.Close()
 		if err != nil {
 			return nil, errors.Wrap(err, "can't read spotify search response")
 		}
