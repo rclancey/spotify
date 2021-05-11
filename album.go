@@ -59,6 +59,11 @@ func (alb *Album) GetTracks() ([]*Track, error) {
 		return nil, err
 	}
 	alb.c.addClientToTracks(sr.Tracks...)
+	for _, tr := range sr.Tracks {
+		if tr.Album == nil {
+			tr.Album = alb
+		}
+	}
 	alb.Tracks = sr.Tracks
 	return alb.Tracks, nil
 }
