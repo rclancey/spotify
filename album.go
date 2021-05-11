@@ -40,9 +40,9 @@ func (c *SpotifyClient) addClientToAlbums(albums ...*Album) {
 	for _, alb := range albums {
 		if alb.c == nil {
 			alb.c = c
-			c.addClientToArtists(alb.Artists...)
-			c.addClientToTracks(alb.Tracks...)
 		}
+		c.addClientToArtists(alb.Artists...)
+		c.addClientToTracks(alb.Tracks...)
 	}
 }
 

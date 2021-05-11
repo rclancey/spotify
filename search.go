@@ -101,6 +101,9 @@ func (c *SpotifyClient) Search(name, kind string) (*SearchResult, error) {
 		q = nu.Query()
 		break
 	}
+	c.addClientToArtists(result.Artists...)
+	c.addClientToAlbums(result.Albums...)
+	c.addClientToTracks(result.Tracks...)
 	return result, nil
 }
 

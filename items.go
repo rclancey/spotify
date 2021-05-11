@@ -113,5 +113,8 @@ func (c *SpotifyClient) GetPaged(rsrc string, q url.Values) (*SearchResult, erro
 		rsrc = nu.Path
 		q = nu.Query()
 	}
+	c.addClientToArtists(result.Artists...)
+	c.addClientToAlbums(result.Albums...)
+	c.addClientToTracks(result.Tracks...)
 	return result, nil
 }
