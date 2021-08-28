@@ -49,6 +49,8 @@ func (c *ClientAuth) AuthenticateRequest(req *http.Request) error {
 	if err != nil {
 		return errors.Wrap(err, "spotify auth failed")
 	}
+	//log.Printf("%s %s", req.Method, req.URL)
+	//log.Printf("Authorization: Bearer %s", c.token)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
 	return nil
 }
