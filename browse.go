@@ -72,6 +72,9 @@ func (c *SpotifyClient) Recommend(seeds ...interface{}) (*RecommendationResult, 
 					album = seed.Album.Name
 				}
 				tracks, err := c.SearchTrack(album, artist, seed.Name)
+				if len(tracks) == 0 {
+					tracks, err = c.SearchTrack("", artist, seed.Name)
+				}
 				if err == nil && len(tracks) > 0 {
 					seed = tracks[0]
 				} else {
