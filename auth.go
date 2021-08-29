@@ -49,14 +49,14 @@ func (c *ClientAuth) AuthenticateRequest(req *http.Request) error {
 	if err != nil {
 		return errors.Wrap(err, "spotify auth failed")
 	}
-	//log.Printf("%s %s", req.Method, req.URL)
-	//log.Printf("Authorization: Bearer %s", c.token)
+	log.Printf("%s %s", req.Method, req.URL)
+	log.Printf("Authorization: Bearer %s", c.token)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
 	return nil
 }
 
 func (c *ClientAuth) AuthIfNecessary() error {
-	if c.token == "" || c.expires.After(time.Now().Add(time.Second)) {
+	if c.token != "" && c.expires.After(time.Now().Add(time.Second)) {
 		return nil
 	}
 	c.token = ""
