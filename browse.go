@@ -2,10 +2,12 @@ package spotify
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -103,6 +105,99 @@ func (c *SpotifyClient) Recommend(seeds ...interface{}) (*RecommendationResult, 
 		return nil, errors.New("no seeds")
 	}
 	q.Set("limit", "100")
+	rsrc := "recommendations"
+	for {
+		res, err := c.client.Get(rsrc, q)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't execute spotify search")
+		}
+		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
+			if res.StatusCode == http.StatusTooManyRequests {
+				wait, err := strconv.Atoi(res.Header.Get("Retry-After"))
+				if err == nil {
+					log.Printf("API ratelimit; waiting %d seconds", wait)
+					time.Sleep(time.Duration(wait + 1) * time.Second)
+					continue
+				}
+			}
+			return nil, errors.New(res.Status)
+		}
+		data, err := ioutil.ReadAll(res.Body)
+		res.Body.Close()
+		if err != nil {
+			return nil, errors.Wrap(err, "can't read spotify search response")
+		}
+		result := &RecommendationResult{}
+		err = json.Unmarshal(data, result)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't unmarshal spotify search response")
+		}
+		return result, nil
+	}
+	return nil, nil
+}
+
+type ArgRange struct {
+	Min    float64 `json:"min,omitempty"`
+	Max    float64 `json:"max,omitempty"`
+	Target float64 `json:"target,omitempty"`
+}
+
+func (r ArgRange) AddQuery(prefix string, q url.Values) {
+	if r.Min != 0 {
+		q.Set(prefix + "_min", strconv.FormatFloat(r.Min, 'f', 3, 64))
+	}
+	if r.Max != 0 {
+		q.Set(prefix + "_max", strconv.FormatFloat(r.Max, 'f', 3, 64))
+	}
+	if r.Target != 0 {
+		q.Set(prefix + "_target", strconv.FormatFloat(r.Target, 'f', 3, 64))
+	}
+}
+
+type MixArgs struct {
+	Acousticness     ArgRange `json:"acousticness,omitempty"`
+	Danceability     ArgRange `json:"danceability,omitempty"`
+	DurationMS       ArgRange `json:"duration_ms,omitempty"`
+	Energy           ArgRange `json:"energy,omitempty"`
+	Instrumentalness ArgRange `json:"instrumentalness,omitempty"`
+	Key              ArgRange `json:"key,omitempty"`
+	Liveness         ArgRange `json:"liveness,omitempty"`
+	Loudness         ArgRange `json:"loudness,omitempty"`
+	Mode             ArgRange `json:"mode,omitempty"`
+	Popularity       ArgRange `json:"popularity,omitempty"`
+	Speechiness      ArgRange `json:"speechiness,omitempty"`
+	Tempo            ArgRange `json:"tempo,omitempty"`
+	TimeSignature    ArgRange `json:"time_signature,omitempty"`
+	Valence          ArgRange `json:"valence,omitempty"`
+}
+
+func (a MixArgs) AddQuery(q url.Values) {
+	ra := reflect.ValueOf(a)
+	rt := reflect.TypeOf(a)
+	n := rt.NumField()
+	for i := 0; i < n; i += 1 {
+		r, isa := ra.Field(i).Interface().(ArgRange)
+		if isa {
+			ft := rt.Field(i)
+			prefix := strings.Split(ft.Tag.Get("json"), ",")[0]
+			r.AddQuery(prefix, q)
+		}
+	}
+}
+
+func (c *SpotifyClient) Mix(genre string, args MixArgs) (*RecommendationResult, error) {
+	res, _ := c.client.Get("recommendations/available-genre-seeds", url.Values{})
+	data, _ := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	fmt.Println(string(data))
+	q := url.Values{}
+	q.Set("seed_genres", genre)
+	q.Set("market", "us")
+	q.Set("limit", "100")
+	args.AddQuery(q)
+	log.Println("mix:", q.Encode())
 	rsrc := "recommendations"
 	for {
 		res, err := c.client.Get(rsrc, q)
