@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -187,11 +186,44 @@ func (a MixArgs) AddQuery(q url.Values) {
 	}
 }
 
+type GenresResponse struct {
+	Genres []string `json:"genres"`
+}
+
+func (c *SpotifyClient) RecommendationGenres() ([]string, error) {
+	for {
+		res, err := c.client.Get("recommendations/available-genre-seeds", url.Values{})
+		if err != nil {
+			return nil, errors.Wrap(err, "can't execute spotify request")
+		}
+		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
+			if res.StatusCode == http.StatusTooManyRequests {
+				wait, err := strconv.Atoi(res.Header.Get("Retry-After"))
+				if err == nil {
+					log.Printf("API ratelimit; waiting %d seconds", wait)
+					time.Sleep(time.Duration(wait + 1) * time.Second)
+					continue
+				}
+			}
+			return nil, errors.New(res.Status)
+		}
+		data, err := ioutil.ReadAll(res.Body)
+		res.Body.Close()
+		if err != nil {
+			return nil, errors.Wrap(err, "can't read spotify search response")
+		}
+		result := &GenresResponse{}
+		err = json.Unmarshal(data, result)
+		if err != nil {
+			return nil, errors.Wrap(err, "can't unmarshal spotify search response")
+		}
+		return result.Genres, nil
+	}
+	return nil, nil
+}
+
 func (c *SpotifyClient) Mix(genre string, args MixArgs) (*RecommendationResult, error) {
-	res, _ := c.client.Get("recommendations/available-genre-seeds", url.Values{})
-	data, _ := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	fmt.Println(string(data))
 	q := url.Values{}
 	q.Set("seed_genres", genre)
 	q.Set("market", "us")
