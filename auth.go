@@ -56,9 +56,10 @@ func (c *ClientAuth) AuthenticateRequest(req *http.Request) error {
 }
 
 func (c *ClientAuth) AuthIfNecessary() error {
-	if c.expires.After(time.Now().Add(time.Second)) {
+	if c.token == "" || c.expires.After(time.Now().Add(time.Second)) {
 		return nil
 	}
+	c.token = ""
 	q := url.Values{}
 	q.Set("grant_type", "client_credentials")
 	body := bytes.NewBufferString(q.Encode())
@@ -91,5 +92,6 @@ func (c *ClientAuth) AuthIfNecessary() error {
 	}
 	c.token = auth.AccessToken
 	c.expires = now.Add(time.Duration(auth.TTL - 1) * time.Second)
+	log.Println("spotify auth expires at", c.expires)
 	return nil
 }
