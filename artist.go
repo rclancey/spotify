@@ -102,5 +102,8 @@ func (art *Artist) GetRelated() ([]*Artist, error) {
 	if err != nil {
 		return nil, err
 	}
+	for _, x := range search.Artists {
+		x.c = art.c
+	}
 	return search.Artists, nil
 }
