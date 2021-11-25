@@ -2,6 +2,8 @@ package spotify
 
 import (
 	//"log"
+	"encoding/json"
+	"io/ioutil"
 	"net/url"
 	"path"
 	"sort"
@@ -81,4 +83,27 @@ func (art *Artist) GetAlbums() ([]*Album, error) {
 	}
 	art.c.addClientToAlbums(sr.Albums...)
 	return sr.Albums, nil
+}
+
+func (art *Artist) GetRelated() ([]*Artist, error) {
+	rsrc := path.Join("artists", art.ID, "related-artists")
+	q := url.Values{}
+	res, err := art.c.client.Get(rsrc, q)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	search := &SearchResult{}
+	err = json.Unmarshal(data, search)
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range search.Artists {
+		x.c = art.c
+	}
+	return search.Artists, nil
 }
